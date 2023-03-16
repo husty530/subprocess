@@ -1,20 +1,24 @@
 ﻿using System.Text.Json;
 using OpenCvSharp;
 
+// register cancellation behavior
 using var cts = new CancellationTokenSource();
 cts.Token.Register(() => Console.WriteLine("cancellation invoked."));
 Console.CancelKeyPress += (s, e) => cts.Cancel();
 
+// prepare video
 var w = 1920;
 var h = 1080;
 using var frame = new Mat(h, w, MatType.CV_8UC3);
 using var cap = new VideoCapture() { FrameWidth = w, FrameHeight = h, Fps = 30 };
 var f = cap.Open(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../../sample.mp4"));
 
+// create SubProcess instance
 var exe = "/** absolute path **/python.exe";
 var py = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../../py/main.py");
 using var process = new SubProcess(exe, py, w, h);
 
+// loop
 try
 {
     while (cap.Read(frame) && !cts.IsCancellationRequested)

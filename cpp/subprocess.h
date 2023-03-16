@@ -2,7 +2,6 @@
 #define SUBPROCESS_H_
 
 #include <iostream>
-#include <string.h>
 #include <vector>
 #include <stdio.h> 
 
@@ -10,11 +9,11 @@ using namespace std;
 
 #ifdef __unix__
 
+#include <string.h>
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <errno.h>
 
 class SubProcess
 {
@@ -100,35 +99,38 @@ public:
 		_exit(EXIT_SUCCESS);
 	}
 
-	bool write_(const char* buf, const int& size_to_write) const
+	bool try_write(const char* buf, const int& size_to_write) const
 	{
 		int size = 0;
 		while (size < size_to_write)
 		{
 			int s = write(_fdw, buf + size, size_to_write - size);
-			if (s == 0) return false;
-			if (s < 0)
-				raise errno;
+			if (s <= 0) return false;
 			size += s;
 		}
 		return true;
 	}
 
-	int read_(char* buf, const int& size_to_read) const
+	int try_read(char* buf, const int& size_to_read) const
 	{
-		int s = read(_fdr, buf, size_to_read);
-		if (s < 0) 
-			raise errno;
-		return s;
+		int size = 0;
+		while (size < size_to_read)
+		{
+			int s = read(_fdr, buf + size, size_to_read - size);
+			if (s < 0) return false;
+			size += s;
+		}
+		return true;
 	}
 
 };
 
 #else
 
-#include <windows.h>
+#include <string>
 #include <tchar.h>
 #include <strsafe.h>
+#include <windows.h>
 
 class SubProcess
 {
@@ -192,9 +194,9 @@ public:
 		GetExitCodeProcess(_process, &exitCode);
 	}
 
-	bool write_(const char* buf, const int& size_to_write) const
+	bool try_write(const char* buf, const int& size_to_write) const
 	{
-		if (WaitForSingleObject(_process, 1) == WAIT_OBJECT_0) return false;
+		if (WaitForSingleObject(_process, 10) == WAIT_OBJECT_0) return false;
 		int size = 0;
 		while (size < size_to_write)
 		{
@@ -205,7 +207,7 @@ public:
 		return true;
 	}
 
-	int read_(char* buf, const int& size_to_read) const
+	bool try_read(char* buf, const int& size_to_read) const
 	{
 		int size = 0;
 		DWORD total;
@@ -218,7 +220,7 @@ public:
 			if (!success) return false;
 			size += s;
 		}
-		return size;
+		return true;
 	}
 
 };
