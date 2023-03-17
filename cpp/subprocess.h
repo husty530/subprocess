@@ -178,6 +178,7 @@ public:
 		_process = pi.hProcess;
         if (!CloseHandle(pi.hThread))
 			print_error("CloseHandle");
+		Sleep(100);
 	}
 
 	~SubProcess()
@@ -196,7 +197,6 @@ public:
 
 	bool try_write(const char* buf, const int& size_to_write) const
 	{
-		if (WaitForSingleObject(_process, 10) == WAIT_OBJECT_0) return false;
 		int size = 0;
 		while (size < size_to_write)
 		{
@@ -213,7 +213,6 @@ public:
 		DWORD total;
 		while (size < size_to_read)
 		{
-			if (WaitForSingleObject(_process, 10) == WAIT_OBJECT_0) return 0;
 			if (PeekNamedPipe(_c2p, NULL, 0, NULL, &total, NULL) == 0) continue;
 			DWORD s = 0;
 			auto success = ReadFile(_c2p, buf + size, size_to_read - size, &s, NULL);
