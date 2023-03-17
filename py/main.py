@@ -19,4 +19,4 @@ if __name__ == '__main__':
     dummy_box1 = { 'label': "person", 'coordinates': [ [100, 100], [200, 100], [200, 100], [200, 200] ] }
     dummy_box2 = { 'label': "dog",    'coordinates': [ [450, 300], [500, 300], [450, 450], [500, 450] ] }
     result = json.dumps([dummy_box1, dummy_box2])
-    # os_writeline(result)
+    os_writeline(result)
