@@ -136,8 +136,8 @@ class SubProcess
 {
 private:
 	HANDLE _process = NULL;
-	HANDLE p2c = NULL;
-	HANDLE c2p = NULL;
+	HANDLE _p2c = NULL;
+	HANDLE _c2p = NULL;
 
 	void print_error(const char* message)
 	{
@@ -156,15 +156,15 @@ public:
 		saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
 		saAttr.bInheritHandle = TRUE;
 		saAttr.lpSecurityDescriptor = NULL;
-		if (!CreatePipe(&c2p, &p2c, &saAttr, 0))
+		if (!CreatePipe(&_c2p, &_p2c, &saAttr, 0))
 			print_error("CreatePipe");
 		PROCESS_INFORMATION pi = {};
 		STARTUPINFO si = { sizeof(STARTUPINFO) };
 		si.cb = sizeof(si);
-        si.hStdError = p2c;
-        si.hStdOutput = p2c;
-        si.hStdInput = c2p;
-        si.dwFlags |= STARTF_USESTDHANDLES;
+		si.hStdError = _p2c;
+		si.hStdOutput = _p2c;
+		si.hStdInput = _c2p;
+		si.dwFlags |= STARTF_USESTDHANDLES;
 		si.wShowWindow = SW_HIDE;
 		string str = path;
 		for (const string& arg : args)
@@ -188,8 +188,8 @@ public:
 	void close_()
 	{
 		WaitForSingleObject(_process, INFINITE);
-		CloseHandle(c2p);
-		CloseHandle(p2c);
+		CloseHandle(_c2p);
+		CloseHandle(_p2c);
 		DWORD exitCode;
 		GetExitCodeProcess(_process, &exitCode);
 	}
@@ -201,7 +201,7 @@ public:
 		while (size < size_to_write)
 		{
 			DWORD s;
-			if (!WriteFile(p2c, buf + size, size_to_write - size, &s, NULL)) return false;
+			if (!WriteFile(_p2c, buf + size, size_to_write - size, &s, NULL)) return false;
 			size += s;
 		}
 		return true;
@@ -213,10 +213,10 @@ public:
 		DWORD total;
 		while (size < size_to_read)
 		{
-			if (WaitForSingleObject(_process, 1) == WAIT_OBJECT_0) return 0;
-			if (PeekNamedPipe(c2p, NULL, 0, NULL, &total, NULL) == 0) continue;
+			if (WaitForSingleObject(_process, 10) == WAIT_OBJECT_0) return 0;
+			if (PeekNamedPipe(_c2p, NULL, 0, NULL, &total, NULL) == 0) continue;
 			DWORD s = 0;
-			auto success = ReadFile(c2p, buf + size, size_to_read - size, &s, NULL);
+			auto success = ReadFile(_c2p, buf + size, size_to_read - size, &s, NULL);
 			if (!success) return false;
 			size += s;
 		}
